@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seedwork</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FAF7F2;
+    --warm-white: #FFFDF9;
+    --sage: #7A9E7E;
+    --sage-light: #EAF1EB;
+    --sage-dark: #3D5E40;
+    --terracotta: #C47B5A;
+    --terracotta-light: #F5EAE4;
+    --terracotta-dark: #7A3F22;
+    --gold: #C9A84C;
+    --gold-light: #FAF3E0;
+    --ink: #2C2C28;
+    --ink-mid: #555550;
+    --ink-soft: #8A8A82;
+    --border: rgba(44,44,40,0.1);
+    --border-soft: rgba(44,44,40,0.06);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; font-size: 14px; line-height: 1.6; }
+  .app { max-width: 800px; margin: 0 auto; padding: 0 16px 60px; }
+
+  /* HEADER */
+  .header { padding: 28px 0 18px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+  .header-title { font-family: 'Cormorant Garamond', serif; font-size: 30px; font-weight: 300; letter-spacing: 0.04em; color: var(--ink); }
+  .header-title em { color: var(--sage-dark); font-style: italic; }
+  .header-date { font-size: 11px; color: var(--ink-soft); font-weight: 300; margin-top: 4px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .phase-badge { background: var(--terracotta-light); color: var(--terracotta-dark); font-size: 11px; padding: 4px 12px; border-radius: 20px; font-weight: 500; letter-spacing: 0.04em; }
+
+  /* DRIVE STATUS */
+  .drive-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: white; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 16px; font-size: 12px; }
+  .drive-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-soft); flex-shrink: 0; transition: background 0.3s; }
+  .drive-dot.connected { background: var(--sage); }
+  .drive-dot.syncing { background: var(--gold); animation: pulse 1s infinite; }
+  .drive-dot.error { background: var(--terracotta); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .drive-status-text { color: var(--ink-mid); flex: 1; }
+  .drive-btn { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 5px 12px; font-family: 'DM Sans', sans-serif; font-size: 11px; color: var(--ink-mid); cursor: pointer; transition: all 0.2s; font-weight: 500; }
+  .drive-btn:hover { border-color: var(--sage); color: var(--sage-dark); }
+  .drive-btn.connect { background: var(--sage-light); border-color: rgba(122,158,126,0.3); color: var(--sage-dark); }
+
+  /* NAV */
+  .nav { display: flex; gap: 4px; margin-bottom: 20px; background: var(--warm-white); border: 1px solid var(--border); border-radius: 12px; padding: 4px; }
+  .nav-btn { flex: 1; background: none; border: none; padding: 8px 6px; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 12px; color: var(--ink-soft); cursor: pointer; transition: all 0.2s; font-weight: 400; letter-spacing: 0.02em; }
+  .nav-btn.active { background: var(--cream); color: var(--ink); font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .nav-btn:hover:not(.active) { color: var(--ink); }
+
+  /* SECTIONS */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* CARDS */
+  .card { background: var(--warm-white); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 14px; }
+  .card-title { font-family: 'Cormorant Garamond', serif; font-size: 17px; font-weight: 400; color: var(--ink); margin-bottom: 14px; letter-spacing: 0.02em; display: flex; align-items: center; gap: 8px; }
+  .card-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sage); flex-shrink: 0; }
+  .card-dot.gold { background: var(--gold); }
+  .card-dot.terra { background: var(--terracotta); }
+
+  /* TODAY */
+  .week-info { background: linear-gradient(135deg, var(--sage-light) 0%, var(--gold-light) 100%); border: 1px solid rgba(122,158,126,0.2); border-radius: 12px; padding: 16px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; }
+  .week-label { font-family: 'Cormorant Garamond', serif; font-size: 15px; font-weight: 400; color: var(--sage-dark); }
+  .week-desc { font-size: 12px; color: var(--ink-mid); margin-top: 2px; }
+  .week-num { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 300; color: var(--sage-dark); opacity: 0.35; }
+
+  /* ANCHORS */
+  .anchor { border-left: 2px solid var(--sage); padding-left: 14px; margin-bottom: 16px; }
+  .anchor.gold { border-color: var(--gold); }
+  .anchor.terra { border-color: var(--terracotta); }
+  .anchor-time { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-soft); margin-bottom: 4px; }
+  .anchor-name { font-weight: 500; font-size: 13px; color: var(--ink); margin-bottom: 8px; }
+  .anchor-items { list-style: none; }
+  .anchor-items li { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border-soft); font-size: 13px; color: var(--ink-mid); cursor: pointer; transition: color 0.15s; user-select: none; }
+  .anchor-items li:last-child { border: none; }
+  .anchor-items li.done { color: var(--ink-soft); text-decoration: line-through; }
+  .check-circle { width: 18px; height: 18px; border: 1.5px solid var(--border); border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.2s; background: white; }
+  .check-circle.checked { background: var(--sage); border-color: var(--sage); }
+  .check-circle.checked::after { content: ''; width: 5px; height: 3px; border-left: 1.5px solid white; border-bottom: 1.5px solid white; transform: rotate(-45deg) translate(0.5px,-0.5px); }
+  .anchor-items li.gold-item .check-circle.checked { background: var(--gold); border-color: var(--gold); }
+  .anchor-items li.terra-item .check-circle.checked { background: var(--terracotta); border-color: var(--terracotta); }
+
+  /* SCORE */
+  .score-bar-wrap { background: var(--cream); border-radius: 8px; padding: 14px; margin-top: 4px; }
+  .score-bar-label { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; color: var(--ink-soft); }
+  .score-val { font-weight: 500; color: var(--ink); }
+  .score-bar { height: 4px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .score-fill { height: 100%; background: var(--sage); border-radius: 4px; transition: width 0.5s ease; }
+
+  /* JOURNAL */
+  .notebook-tabs { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 2px; }
+  .notebook-tab { background: white; border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 12px; color: var(--ink-soft); cursor: pointer; white-space: nowrap; transition: all 0.2s; font-family: 'DM Sans', sans-serif; }
+  .notebook-tab.active { background: var(--sage-light); border-color: rgba(122,158,126,0.4); color: var(--sage-dark); font-weight: 500; }
+  .notebook-tab:hover:not(.active) { color: var(--ink); border-color: var(--ink-soft); }
+
+  .journal-prompt { background: var(--terracotta-light); border-left: 3px solid var(--terracotta); border-radius: 0 10px 10px 0; padding: 14px; margin-bottom: 14px; }
+  .journal-prompt-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--terracotta); margin-bottom: 6px; font-weight: 500; }
+  .journal-prompt-text { font-family: 'Cormorant Garamond', serif; font-size: 16px; font-style: italic; color: var(--terracotta-dark); line-height: 1.5; }
+  .journal-textarea { width: 100%; min-height: 140px; background: white; border: 1px solid var(--border); border-radius: 10px; padding: 14px; font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--ink); resize: vertical; line-height: 1.7; margin-bottom: 10px; outline: none; transition: border-color 0.2s; }
+  .journal-textarea:focus { border-color: var(--terracotta); }
+  .journal-textarea::placeholder { color: var(--ink-soft); }
+
+  .journal-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .save-btn { background: var(--terracotta); color: white; border: none; border-radius: 8px; padding: 10px 20px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; cursor: pointer; letter-spacing: 0.04em; transition: opacity 0.2s; }
+  .save-btn:hover { opacity: 0.85; }
+  .save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .outline-btn { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-family: 'DM Sans', sans-serif; font-size: 12px; color: var(--ink-mid); cursor: pointer; transition: border-color 0.2s; }
+  .outline-btn:hover { border-color: var(--terracotta); color: var(--terracotta); }
+  .save-status { font-size: 11px; color: var(--sage-dark); font-style: italic; margin-left: 4px; }
+
+  .past-entries { margin-top: 20px; }
+  .past-entry { background: var(--cream); border-radius: 10px; padding: 14px; margin-bottom: 10px; }
+  .past-entry-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+  .past-entry-date { font-size: 11px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.05em; }
+  .past-entry-notebook { font-size: 10px; background: var(--sage-light); color: var(--sage-dark); padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+  .past-entry-prompt { font-size: 11px; color: var(--terracotta); margin-bottom: 6px; font-style: italic; }
+  .past-entry-text { font-size: 13px; color: var(--ink-mid); line-height: 1.6; }
+
+  /* NUTRITION */
+  .nutrition-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .nutrition-item { background: var(--cream); border-radius: 10px; padding: 12px; }
+  .nutrition-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); margin-bottom: 6px; }
+  .nutrition-focus { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 4px; }
+  .nutrition-why { font-size: 11px; color: var(--ink-soft); line-height: 1.4; }
+  .meal-list { list-style: none; }
+  .meal-list li { padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: 13px; }
+  .meal-list li:last-child { border: none; }
+  .meal-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); margin-bottom: 2px; }
+  .ivf-alert { background: var(--gold-light); border: 1px solid rgba(201,168,76,0.25); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; display: flex; gap: 10px; align-items: flex-start; }
+  .ivf-icon { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); flex-shrink: 0; margin-top: 5px; }
+  .ivf-text { font-size: 13px; color: #6B4C10; line-height: 1.6; }
+
+  /* PLAN */
+  .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 14px; }
+  .day-pill { border-radius: 8px; padding: 8px 4px; text-align: center; border: 1px solid var(--border); background: white; }
+  .day-pill.rest { background: var(--cream); }
+  .day-pill.exercise { border-color: rgba(122,158,126,0.3); background: var(--sage-light); }
+  .day-pill.today { border-color: var(--terracotta); box-shadow: 0 0 0 2px var(--terracotta-light); }
+  .day-name { font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); margin-bottom: 4px; }
+  .day-tag { font-size: 9px; color: var(--sage-dark); font-weight: 500; }
+  .day-tag.rest { color: var(--ink-soft); }
+  .schedule-row { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border-soft); align-items: flex-start; }
+  .schedule-row:last-child { border: none; }
+  .schedule-time { font-size: 11px; color: var(--ink-soft); min-width: 70px; padding-top: 1px; }
+  .schedule-name { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 2px; }
+  .schedule-detail { font-size: 12px; color: var(--ink-soft); line-height: 1.4; }
+  .schedule-tag { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 500; margin-top: 4px; }
+  .tag-sage { background: var(--sage-light); color: var(--sage-dark); }
+  .tag-terra { background: var(--terracotta-light); color: var(--terracotta-dark); }
+  .tag-gold { background: var(--gold-light); color: #6B4C10; }
+
+  /* PROGRESS */
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+  .stat-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 12px; text-align: center; }
+  .stat-num { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 300; color: var(--ink); line-height: 1; margin-bottom: 4px; }
+  .stat-label { font-size: 10px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.06em; }
+  .week-card { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 10px; }
+  .week-card-header { padding: 12px 16px; background: var(--cream); display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+  .week-card-title { font-weight: 500; font-size: 13px; color: var(--ink); }
+  .week-card-subtitle { font-size: 11px; color: var(--ink-soft); margin-top: 1px; }
+  .week-card-body { padding: 14px 16px; background: white; font-size: 13px; color: var(--ink-mid); line-height: 1.7; border-top: 1px solid var(--border-soft); display: none; }
+  .insight-box { background: var(--sage-light); border: 1px solid rgba(122,158,126,0.2); border-radius: 10px; padding: 14px; margin-top: 10px; }
+  .insight-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sage-dark); margin-bottom: 6px; font-weight: 500; }
+  .insight-text { font-family: 'Cormorant Garamond', serif; font-size: 15px; font-style: italic; color: var(--sage-dark); line-height: 1.6; }
+
+  /* COACH */
+  .coach-intro { background: white; border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 14px; }
+  .coach-avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--sage-light); border: 1px solid rgba(122,158,126,0.3); display: flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-size: 18px; color: var(--sage-dark); margin-bottom: 12px; }
+  .coach-message { font-size: 13px; color: var(--ink-mid); line-height: 1.7; margin-bottom: 10px; }
+  .principles-list { list-style: none; }
+  .principles-list li { padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-size: 13px; color: var(--ink-mid); display: flex; gap: 10px; align-items: flex-start; line-height: 1.5; }
+  .principles-list li:last-child { border: none; }
+  .principle-num { font-family: 'Cormorant Garamond', serif; font-size: 16px; color: var(--sage); flex-shrink: 0; line-height: 1.3; }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(44,44,40,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+  .modal { background: var(--warm-white); border-radius: 16px; padding: 28px; max-width: 420px; width: 100%; border: 1px solid var(--border); }
+  .modal-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 400; color: var(--ink); margin-bottom: 10px; }
+  .modal-body { font-size: 13px; color: var(--ink-mid); line-height: 1.7; margin-bottom: 20px; }
+  .modal-actions { display: flex; gap: 10px; }
+  .modal-primary { background: var(--sage); color: white; border: none; border-radius: 8px; padding: 12px 20px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; flex: 1; transition: opacity 0.2s; }
+  .modal-primary:hover { opacity: 0.85; }
+  .modal-secondary { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--ink-mid); cursor: pointer; }
+
+  .footer-note { text-align: center; font-family: 'Cormorant Garamond', serif; font-size: 14px; color: var(--ink-soft); padding-top: 20px; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="header-title"><em>Seedwork</em></div>
+        <div class="header-date" id="headerDate"></div>
+      </div>
+      <div class="phase-badge">Pre-IVF Phase</div>
+    </div>
+  </div>
+
+  <!-- DRIVE STATUS BAR -->
+  <div class="drive-bar" id="driveBar">
+    <div class="drive-dot" id="driveDot"></div>
+    <div class="drive-status-text" id="driveStatusText">Not connected to Google Drive</div>
+    <button class="drive-btn connect" id="driveActionBtn" onclick="handleDriveAction()">Connect Google Drive</button>
+  </div>
+
+  <nav class="nav">
+    <button class="nav-btn active" onclick="showSection('today',this)">Today</button>
+    <button class="nav-btn" onclick="showSection('plan',this)">Plan</button>
+    <button class="nav-btn" onclick="showSection('nutrition',this)">Nutrition</button>
+    <button class="nav-btn" onclick="showSection('journal',this)">Journal</button>
+    <button class="nav-btn" onclick="showSection('progress',this)">Progress</button>
+    <button class="nav-btn" onclick="showSection('coach',this)">Coach</button>
+  </nav>
+
+  <!-- TODAY -->
+  <div id="today" class="section active">
+    <div class="week-info">
+      <div>
+        <div class="week-label" id="weekLabel">Week 1 — Installation</div>
+        <div class="week-desc" id="weekDesc">Don't optimize. Just show up.</div>
+      </div>
+      <div class="week-num" id="weekNum">1</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="card-dot"></span>Morning Anchor <span style="font-size:11px;color:var(--ink-soft);font-weight:300;margin-left:auto;">7:30 – 8:00 AM</span></div>
+      <div class="anchor">
+        <ul class="anchor-items">
+          <li onclick="toggleCheck(this,'m0')"><div class="check-circle"></div>Water + natural light (2 min)</li>
+          <li onclick="toggleCheck(this,'m1')"><div class="check-circle"></div>Journal (today's prompt)</li>
+          <li onclick="toggleCheck(this,'m2')"><div class="check-circle"></div>Meditation (10 min)</li>
+          <li onclick="toggleCheck(this,'m3')"><div class="check-circle"></div>Preview today's one task</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="card-dot gold"></span>Exercise <span style="font-size:11px;color:var(--ink-soft);font-weight:300;margin-left:auto;">9:00 – 9:45 AM</span></div>
+      <div class="anchor gold">
+        <ul class="anchor-items">
+          <li class="gold-item" onclick="toggleCheck(this,'e0')"><div class="check-circle"></div><span id="exerciseLabel">P.volve workout (45 min)</span></li>
+          <li class="gold-item" onclick="toggleCheck(this,'e1')"><div class="check-circle"></div>Clothes set out night before ✓</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="card-dot"></span>Work Block — Pic-Time <span style="font-size:11px;color:var(--ink-soft);font-weight:300;margin-left:auto;">10:00 – 2:30 PM</span></div>
+      <div class="anchor">
+        <ul class="anchor-items">
+          <li onclick="toggleCheck(this,'w0')"><div class="check-circle"></div>Set single non-negotiable task</li>
+          <li onclick="toggleCheck(this,'w1')"><div class="check-circle"></div>2-min shutdown ritual at 2:30</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="card-dot gold"></span>Shukily Block <span style="font-size:11px;color:var(--ink-soft);font-weight:300;margin-left:auto;">3:00 – 4:30 PM <span style="font-size:10px;">(Tue & Thu)</span></span></div>
+      <div class="anchor gold">
+        <ul class="anchor-items">
+          <li class="gold-item" onclick="toggleCheck(this,'s0')"><div class="check-circle"></div>One Shukily task moved forward</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="card-dot terra"></span>Evening Anchor <span style="font-size:11px;color:var(--ink-soft);font-weight:300;margin-left:auto;">8:30 – 9:00 PM</span></div>
+      <div class="anchor terra">
+        <ul class="anchor-items">
+          <li class="terra-item" onclick="toggleCheck(this,'v0')"><div class="check-circle"></div>Workspace closed + tomorrow previewed</li>
+          <li class="terra-item" onclick="toggleCheck(this,'v1')"><div class="check-circle"></div>Something only for you (20 min)</li>
+          <li class="terra-item" onclick="toggleCheck(this,'v2')"><div class="check-circle"></div>Light stretch or stillness</li>
+          <li class="terra-item" onclick="toggleCheck(this,'v3')"><div class="check-circle"></div>Lay out tomorrow's workout clothes</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="card-dot"></span>Today's Score</div>
+      <div class="score-bar-wrap">
+        <div class="score-bar-label"><span>Anchors completed</span><span class="score-val" id="scoreText">0 of 13</span></div>
+        <div class="score-bar"><div class="score-fill" id="scoreFill" style="width:0%"></div></div>
+      </div>
+      <div style="font-size:12px;color:var(--ink-soft);margin-top:10px;font-style:italic;font-family:'Cormorant Garamond',serif;">"Consistency beats perfection. Showing up is the win."</div>
+    </div>
+  </div>
+
+  <!-- PLAN -->
+  <div id="plan" class="section">
+    <div class="card">
+      <div class="card-title"><span class="card-dot"></span>Weekly Exercise Schedule</div>
+      <div class="week-grid" id="weekGrid"></div>
+      <div class="ivf-alert">
+        <div class="ivf-icon"></div>
+        <div class="ivf-text">Saturday is your flex day. On weeks with IVF appointments or hormonal shifts — Saturday becomes rest automatically. 4 workouts = a full win.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="card-dot gold"></span>Shukily Time This Week</div>
+      <div class="schedule-row"><div class="schedule-time">Tue & Thu</div><div><div class="schedule-name">Shukily Deep Work</div><div class="schedule-detail">3:00 – 4:30 PM · One focused task per session. A single meaningful action that moves the business forward.</div><span class="schedule-tag tag-gold">Business</span></div></div>
+      <div class="schedule-row"><div class="schedule-time">Sunday PM</div><div><div class="schedule-name">Weekly Shukily Review</div><div class="schedule-detail">30 min · What did I move forward? What's the one priority next week?</div><span class="schedule-tag tag-gold">Planning</span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="card-dot terra"></span>Full Daily Structure</div>
+      <div class="schedule-row"><div class="schedule-time">7:30 AM</div><div><div class="schedule-name">Morning Anchor</div><div class="schedule-detail">Water, journal, meditation, task preview</div><span class="schedule-tag tag-sage">Daily</span></div></div>
+      <div class="schedule-row"><div class="schedule-time">9:00 AM</div><div><div class="schedule-name">P.volve Workout</div><div class="schedule-detail">Mon, Tue, Thu, Fri + Sat (flex)</div><span class="schedule-tag tag-sage">Move</span></div></div>
+      <div class="schedule-row"><div class="schedule-time">10:00 AM</div><div><div class="schedule-name">Pic-Time Work Block</div><div class="schedule-detail">Deep focus, single priority task first</div><span class="schedule-tag tag-terra">Work</span></div></div>
+      <div class="schedule-row"><div class="schedule-time">2:30 PM</div><div><div class="schedule-name">Work Shutdown</div><div class="schedule-detail">2-min close: mark done, write one handoff note</div><span class="schedule-tag tag-terra">Ritual</span></div></div>
+      <div class="schedule-row"><div class="schedule-time">3:00 PM</div><div><div class="schedule-name">Shukily Block</div><div class="schedule-detail">Tue & Thu only. One task. Close at 4:30.</div><span class="schedule-tag tag-gold">Business</span></div></div>
+      <div class="schedule-row"><div class="schedule-time">8:30 PM</div><div><div class="schedule-name">Evening Anchor</div><div class="schedule-detail">Shutdown, personal time, stretch, prep for tomorrow</div><span class="schedule-tag tag-sage">Daily</span></div></div>
+    </div>
+  </div>
+
+  <!-- NUTRITION -->
+  <div id="nutrition" class="section">
+    <div class="card">
+      <div class="card-title"><span class="card-dot terra"></span>Pre-IVF Nutrition Focus</div>
+      <div class="nutrition-grid">
+        <div class="nutrition-item"><div class="nutrition-label">Priority 1</div><div class="nutrition-focus">Folate & B vitamins</div><div class="nutrition-why">Dark leafy greens, lentils, eggs. Critical for egg quality.</div></div>
+        <div class="nutrition-item"><div class="nutrition-label">Priority 2</div><div class="nutrition-focus">Antioxidants</div><div class="nutrition-why">Berries, walnuts, colorful veg. Reduces oxidative stress.</div></div>
+        <div class="nutrition-item"><div class="nutrition-label">Priority 3</div><div class="nutrition-focus">Omega-3 fats</div><div class="nutrition-why">Salmon, sardines, flaxseed. Anti-inflammatory support.</div></div>
+        <div class="nutrition-item"><div class="nutrition-label">Priority 4</div><div class="nutrition-focus">Blood sugar balance</div><div class="nutrition-why">Protein with every meal. Avoid sugar spikes. Hormone stability.</div></div>
+      </div>
+      <div class="ivf-alert"><div class="ivf-icon"></div><div class="ivf-text">Avoid: processed sugar, alcohol, trans fats, excessive caffeine (1 coffee/day max). These directly affect follicle quality and hormonal balance. You're building the environment for something extraordinary.</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="card-dot gold"></span>Sample Day of Eating</div>
+      <ul class="meal-list">
+        <li><div class="meal-label">Morning</div>Eggs (2) + avocado + spinach on whole grain · or Greek yogurt with berries + chia seeds</li>
+        <li><div class="meal-label">Mid-morning</div>Handful of walnuts · or apple with almond butter</li>
+        <li><div class="meal-label">Lunch</div>Large salad: leafy greens, chickpeas or salmon, olive oil + lemon · add quinoa for satiety</li>
+        <li><div class="meal-label">Afternoon</div>Hummus + veggie sticks · or mixed nuts + fruit</li>
+        <li><div class="meal-label">Dinner</div>Grilled fish or chicken · roasted vegetables · small portion of brown rice or lentils</li>
+        <li><div class="meal-label">Evening</div>Chamomile tea · small piece of dark chocolate (70%+)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="card-dot"></span>Supplements & Hydration</div>
+      <ul class="anchor-items" style="margin:0;">
+        <li onclick="toggleCheck(this,'n0')"><div class="check-circle"></div>2–2.5L water daily</li>
+        <li onclick="toggleCheck(this,'n1')"><div class="check-circle"></div>Prenatal vitamin (with folate, not just folic acid)</li>
+        <li onclick="toggleCheck(this,'n2')"><div class="check-circle"></div>Vitamin D (check your levels)</li>
+        <li onclick="toggleCheck(this,'n3')"><div class="check-circle"></div>CoQ10 — discuss dose with your doctor</li>
+        <li onclick="toggleCheck(this,'n4')"><div class="check-circle"></div>Magnesium glycinate at night</li>
+      </ul>
+      <div style="font-size:11px;color:var(--ink-soft);margin-top:12px;font-style:italic;">Always verify supplements with your reproductive endocrinologist.</div>
+    </div>
+  </div>
+
+  <!-- JOURNAL -->
+  <div id="journal" class="section">
+    <div class="notebook-tabs" id="notebookTabs"></div>
+
+    <div class="journal-prompt" id="journalPromptBox">
+      <div class="journal-prompt-label">Today's Prompt</div>
+      <div class="journal-prompt-text" id="journalPromptText"></div>
+    </div>
+
+    <textarea class="journal-textarea" id="journalTextarea" placeholder="Begin here, without judgment. There's no right answer..."></textarea>
+
+    <div class="journal-actions">
+      <button class="save-btn" id="saveEntryBtn" onclick="saveEntry()">Save to Drive</button>
+      <button class="outline-btn" onclick="nextPrompt()">Try another prompt</button>
+      <span class="save-status" id="saveStatus"></span>
+    </div>
+
+    <div class="past-entries" id="pastEntries"></div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div id="progress" class="section">
+    <div class="card">
+      <div class="card-title"><span class="card-dot"></span>Month 1 Overview</div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-num" id="statDays">0</div><div class="stat-label">Days active</div></div>
+        <div class="stat-card"><div class="stat-num" id="statJournals">0</div><div class="stat-label">Journal entries</div></div>
+        <div class="stat-card"><div class="stat-num" id="statStreak">0</div><div class="stat-label">Current streak</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="card-dot gold"></span>Sunday Reflection</div>
+      <div class="journal-prompt" style="background:var(--gold-light);border-left-color:var(--gold);margin-bottom:10px;">
+        <div class="journal-prompt-label" style="color:var(--gold);">Weekly Check-in</div>
+        <div class="journal-prompt-text" style="color:#4A3200;font-size:14px;">What made this week hard? What's one thing I can remove or simplify next week?</div>
+      </div>
+      <textarea class="journal-textarea" id="weeklyReflection" placeholder="Write honestly. This is how the system improves..." style="min-height:90px;"></textarea>
+      <div class="journal-actions">
+        <button class="save-btn" style="background:var(--gold);" onclick="saveWeekly()">Save to Drive</button>
+        <span class="save-status" id="weeklySaveStatus"></span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="card-dot terra"></span>What to Expect</div>
+      <div class="week-card"><div class="week-card-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'"><div><div class="week-card-title">Week 1 — The Installation</div><div class="week-card-subtitle">High energy, new feeling</div></div><span style="color:var(--ink-soft);font-size:12px;">▾</span></div><div class="week-card-body">Everything feels doable. You may over-perform. Enjoy it, but don't over-invest. This feeling is not the baseline. Focus on completing the anchors, not doing them perfectly.</div></div>
+      <div class="week-card"><div class="week-card-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'"><div><div class="week-card-title">Week 2 — The Dip</div><div class="week-card-subtitle">This is normal. Don't quit.</div></div><span style="color:var(--ink-soft);font-size:12px;">▾</span></div><div class="week-card-body">The novelty wears off. The routine feels mechanical. Nothing has changed externally — the system is being installed. Week 2 is the most important week not to quit.</div></div>
+      <div class="week-card"><div class="week-card-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'"><div><div class="week-card-title">Week 3 — The First Real Test</div><div class="week-card-subtitle">Disruption will come</div></div><span style="color:var(--ink-soft);font-size:12px;">▾</span></div><div class="week-card-body">Something will disrupt the routine. Use the minimum viable routine: water, one journal sentence, 5-min meditation. Don't abandon — reduce. If you survive week 3, you're building something real.</div></div>
+      <div class="week-card"><div class="week-card-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'"><div><div class="week-card-title">Week 4 — Quiet Momentum</div><div class="week-card-subtitle">You'll feel it now</div></div><span style="color:var(--ink-soft);font-size:12px;">▾</span></div><div class="week-card-body">The anchors start to feel automatic. The morning feels slightly off when you don't do it. That's the signal. You'll trust yourself slightly more — and that trust is the foundation everything builds on.</div></div>
+    </div>
+  </div>
+
+  <!-- COACH -->
+  <div id="coach" class="section">
+    <div class="coach-intro">
+      <div class="coach-avatar">✦</div>
+      <div class="coach-message">You're building two things simultaneously: a business and a body ready for IVF. This plan runs on one truth — <em>you don't need more discipline, you need better structure</em>. Discipline follows systems, not willpower.</div>
+      <div class="coach-message">This is your pre-IVF window. Every healthy choice you make in the next 8 weeks is a direct investment in what comes next. You are not waiting for IVF to begin. It already has.</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="card-dot"></span>Your Core Principles</div>
+      <ul class="principles-list">
+        <li><span class="principle-num">01</span>Never miss twice. One missed day is human. Two is a new habit forming — the habit of not doing it.</li>
+        <li><span class="principle-num">02</span>Minimum viable routine on hard days: water + one journal sentence + 5-min meditation. That's it.</li>
+        <li><span class="principle-num">03</span>Named days, not numbers. You exercise Monday, Tuesday, Thursday, Friday. Not "try to do 5 workouts."</li>
+        <li><span class="principle-num">04</span>One task per work block. Not a list. If you do that one thing, the day succeeded.</li>
+        <li><span class="principle-num">05</span>Shukily gets protected time, not leftover time. Tue & Thu, 3–4:30pm.</li>
+        <li><span class="principle-num">06</span>You're not building a routine. You're building evidence that you keep promises to yourself.</li>
+        <li><span class="principle-num">07</span>Saturday is flex. On any IVF-adjacent hard week, Saturday is automatically rest. 4 workouts is a full win.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="card-dot terra"></span>Hidden Friction Points</div>
+      <ul class="principles-list">
+        <li><span class="principle-num" style="color:var(--terracotta);">!</span>Decision fatigue in the morning. Eliminate all unmade choices: same journal format, same meditation app, workout already scheduled.</li>
+        <li><span class="principle-num" style="color:var(--terracotta);">!</span>"I'll do it later" doesn't exist with a 10am–2:30pm work block. Protect mornings fiercely.</li>
+        <li><span class="principle-num" style="color:var(--terracotta);">!</span>Pseudo-productivity: reorganizing lists, low-priority replies. Feels like work, moves nothing.</li>
+        <li><span class="principle-num" style="color:var(--terracotta);">!</span>Comparison spirals on low days. A 3-day break is not starting over. The system waits for you.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="card-dot gold"></span>IVF Preparation Mindset</div>
+      <div class="insight-box">
+        <div class="insight-label">Remember this</div>
+        <div class="insight-text">The habits you build now are not separate from your IVF preparation — they are your IVF preparation. Sleep, stress reduction, nutrition, movement, and mental clarity are all inputs into your body's readiness.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">Seedwork — the quiet effort before anything is visible.</div>
+</div>
+
+<!-- DRIVE MODAL -->
+<div class="modal-overlay" id="driveModal" style="display:none;">
+  <div class="modal">
+    <div class="modal-title">Connect Google Drive</div>
+    <div class="modal-body">
+      Seedwork will save your journal entries and reflections as a Google Doc — accessible from any device, forever.<br><br>
+      Your data stays in <strong>your</strong> Drive. Nothing is stored anywhere else.<br><br>
+      <strong>How it works:</strong><br>
+      1. Click "Connect" below<br>
+      2. Sign in with your Google account<br>
+      3. Allow Seedwork to create and edit one document<br>
+      4. Every entry auto-saves from that point forward
+    </div>
+    <div class="modal-actions">
+      <button class="modal-primary" onclick="startOAuth()">Connect Google Drive</button>
+      <button class="modal-secondary" onclick="closeModal()">Not now</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────
+// To use Google Drive, you need a free Google Cloud project:
+// 1. Go to console.cloud.google.com
+// 2. Create a project, enable Google Drive API
+// 3. Create OAuth 2.0 credentials (Web application)
+// 4. Add your file URL to "Authorized JavaScript origins"
+// 5. Paste your Client ID below
+const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID_HERE';
+const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+const DOC_NAME = 'Seedwork — My Journal';
+
+// ─── STATE ─────────────────────────────────────────────────
+let accessToken = localStorage.getItem('sw_access_token') || null;
+let docFileId = localStorage.getItem('sw_doc_id') || null;
+let journalEntries = JSON.parse(localStorage.getItem('sw_entries') || '[]');
+let checkStates = JSON.parse(localStorage.getItem('sw_checks') || '{}');
+let currentPromptIndex = 0;
+let activeNotebook = 'Daily';
+let driveReady = false;
+
+const NOTEBOOKS = ['Daily', 'Mindfulness', 'Shukily', 'Body & Health', 'Gratitude'];
+
+const PROMPTS = {
+  'Daily': [
+    "What's the one thing that would make today feel complete — not productive, complete?",
+    "Where am I being hard on myself that I wouldn't be hard on someone I love?",
+    "What does my body need from me today — and am I listening?",
+    "What felt true this week that I haven't said out loud yet?",
+    "What am I holding that I'm ready to put down?",
+    "What is one thing I keep almost believing about myself but haven't fully claimed yet?",
+    "Where in my life am I confusing busyness with progress?",
+  ],
+  'Mindfulness': [
+    "What emotion have I been avoiding, and what might it be trying to tell me?",
+    "When do I feel most like myself? What conditions create that feeling?",
+    "What would I do differently today if I fully trusted that things were going to work out?",
+    "What am I nourishing beyond my body right now? What am I neglecting?",
+    "What part of this journey am I secretly proud of, even if I don't say it?",
+    "What do I need to forgive myself for in order to move more freely?",
+    "Where is my energy going that it didn't agree to go?",
+    "What would more gentleness with myself allow?",
+    "What am I most afraid of right now — and what would it mean if that fear didn't come true?",
+  ],
+  'Shukily': [
+    "What's the one thing Shukily needs from me most right now — not someday, this week?",
+    "Where am I playing small with Shukily, and why?",
+    "What would I build if I knew it couldn't fail?",
+    "What's one assumption I'm making about Shukily that might not actually be true?",
+    "Who is Shukily really for — and am I building it for them, or for how I want it to look?",
+    "What does 'moving forward' actually mean for Shukily right now?",
+    "What's the gap between where Shukily is and where I want it to be — and what's one step that closes it?",
+  ],
+  'Body & Health': [
+    "How did my body feel today — and what might it be telling me?",
+    "What does 'taking care of myself' look like this week — not ideally, realistically?",
+    "How am I feeling about the IVF journey — without filtering it into something more manageable?",
+    "What is my body doing well right now that I haven't given it credit for?",
+    "What am I building in my body right now, even when I can't see it?",
+    "What does feeling healthy actually feel like for me — in my body, not just in my habits?",
+    "What would I want to remember about this particular phase of my health journey?",
+  ],
+  'Gratitude': [
+    "What's something small from today that I almost missed being grateful for?",
+    "Who showed up for me this week — even in a small way — that I haven't properly acknowledged?",
+    "What's something about my current life that a past version of me would be amazed by?",
+    "What's one thing about my body I'm grateful for, right now, as it is?",
+    "What's a challenge I'm grateful for because of what it's teaching me?",
+    "What would I regret not having appreciated about this exact moment in my life?",
+    "What's something that's working — that I keep forgetting to notice?",
+  ]
+};
+
+// ─── INIT ──────────────────────────────────────────────────
+function init() {
+  setDateHeader();
+  setWeekInfo();
+  setExerciseDay();
+  buildWeekGrid();
+  buildNotebookTabs();
+  setPrompt();
+  restoreChecks();
+  updateScore();
+  renderPastEntries();
+  updateStats();
+  checkDriveStatus();
+}
+
+function setDateHeader() {
+  const now = new Date();
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('headerDate').textContent = `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+}
+
+function setWeekInfo() {
+  const weeks = [
+    {l:'Week 1 — Installation', d:'Don\'t optimize. Just show up.'},
+    {l:'Week 2 — The Dip', d:'It gets harder before it gets automatic.'},
+    {l:'Week 3 — First Real Test', d:'Reduce, don\'t abandon.'},
+    {l:'Week 4 — Quiet Momentum', d:'You\'re building something real.'}
+  ];
+  const w = Math.min(3, Math.floor((Date.now() - new Date('2025-01-01')) / (7*86400000)) % 4);
+  document.getElementById('weekLabel').textContent = weeks[w].l;
+  document.getElementById('weekDesc').textContent = weeks[w].d;
+  document.getElementById('weekNum').textContent = w + 1;
+}
+
+function setExerciseDay() {
+  const d = new Date().getDay();
+  const labels = {1:'Monday Move',2:'Tuesday Move',4:'Thursday Move',5:'Friday Move',6:'Saturday Flex'};
+  const restDays = {0:'Rest Day — recover and restore',3:'Rest Day — active recovery'};
+  const el = document.getElementById('exerciseLabel');
+  if (labels[d]) el.textContent = 'P.volve workout (45 min)';
+  else el.textContent = restDays[d] || 'Active rest: walk, stretch, breathe';
+}
+
+function buildWeekGrid() {
+  const today = new Date().getDay();
+  const days = [{n:'Sun',d:0,type:'rest'},{n:'Mon',d:1,type:'exercise'},{n:'Tue',d:2,type:'exercise'},{n:'Wed',d:3,type:'rest'},{n:'Thu',d:4,type:'exercise'},{n:'Fri',d:5,type:'exercise'},{n:'Sat',d:6,type:'flex'}];
+  const grid = document.getElementById('weekGrid');
+  grid.innerHTML = days.map(day => {
+    const isToday = day.d === today;
+    const cls = `day-pill${day.type === 'exercise' ? ' exercise' : day.type === 'flex' ? '' : ' rest'}${isToday ? ' today' : ''}`;
+    const icon = day.type === 'rest' ? '—' : '◎';
+    const iconColor = day.type === 'rest' ? 'color:var(--ink-soft)' : day.type === 'flex' ? 'color:var(--gold)' : '';
+    const tagCls = day.type === 'rest' ? 'day-tag rest' : day.type === 'flex' ? 'day-tag' : 'day-tag';
+    const tagStyle = day.type === 'flex' ? 'color:#6B4C10' : '';
+    const tag = day.type === 'rest' ? 'Rest' : day.type === 'flex' ? 'Flex' : 'Move';
+    const pillStyle = day.type === 'flex' ? 'border-color:rgba(201,168,76,0.4);background:var(--gold-light);' : '';
+    return `<div class="${cls}" style="${pillStyle}"><div class="day-name">${day.n}</div><div style="font-size:16px;margin-bottom:3px;${iconColor}">${icon}</div><div class="${tagCls}" style="${tagStyle}">${tag}</div></div>`;
+  }).join('');
+}
+
+function buildNotebookTabs() {
+  const tabs = document.getElementById('notebookTabs');
+  tabs.innerHTML = NOTEBOOKS.map(n =>
+    `<button class="notebook-tab${n===activeNotebook?' active':''}" onclick="switchNotebook('${n}',this)">${n}</button>`
+  ).join('');
+}
+
+function switchNotebook(name, btn) {
+  activeNotebook = name;
+  document.querySelectorAll('.notebook-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  currentPromptIndex = 0;
+  setPrompt();
+  renderPastEntries();
+}
+
+function setPrompt() {
+  const prompts = PROMPTS[activeNotebook] || PROMPTS['Daily'];
+  document.getElementById('journalPromptText').textContent = prompts[currentPromptIndex % prompts.length];
+}
+
+function nextPrompt() {
+  currentPromptIndex++;
+  setPrompt();
+}
+
+// ─── CHECKS ────────────────────────────────────────────────
+function getToday() { return new Date().toISOString().split('T')[0]; }
+
+function restoreChecks() {
+  const saved = checkStates[getToday()] || {};
+  document.querySelectorAll('.anchor-items li[onclick]').forEach(li => {
+    const key = li.getAttribute('onclick').match(/'([^']+)'\)/)?.[1];
+    if (key && saved[key]) {
+      li.classList.add('done');
+      li.querySelector('.check-circle').classList.add('checked');
+    }
+  });
+}
+
+function toggleCheck(li, key) {
+  li.classList.toggle('done');
+  li.querySelector('.check-circle').classList.toggle('checked');
+  const today = getToday();
+  if (!checkStates[today]) checkStates[today] = {};
+  checkStates[today][key] = li.classList.contains('done');
+  localStorage.setItem('sw_checks', JSON.stringify(checkStates));
+  updateScore();
+  updateStats();
+  if (driveReady) scheduleDriveSync();
+}
+
+function updateScore() {
+  const all = document.querySelectorAll('#today .anchor-items li[onclick]');
+  const done = document.querySelectorAll('#today .anchor-items li[onclick].done');
+  const total = all.length;
+  const count = done.length;
+  document.getElementById('scoreText').textContent = `${count} of ${total}`;
+  document.getElementById('scoreFill').style.width = `${Math.round((count/total)*100)}%`;
+}
+
+// ─── JOURNAL ───────────────────────────────────────────────
+function saveEntry() {
+  const text = document.getElementById('journalTextarea').value.trim();
+  if (!text) return;
+  const prompts = PROMPTS[activeNotebook] || PROMPTS['Daily'];
+  const entry = {
+    id: Date.now(),
+    date: getToday(),
+    notebook: activeNotebook,
+    prompt: prompts[currentPromptIndex % prompts.length],
+    text,
+    ts: Date.now()
+  };
+  journalEntries.unshift(entry);
+  localStorage.setItem('sw_entries', JSON.stringify(journalEntries));
+  document.getElementById('journalTextarea').value = '';
+  renderPastEntries();
+  updateStats();
+  if (driveReady) saveToDrive(entry);
+  else showSaveStatus('saveStatus', 'Saved locally (connect Drive to sync)');
+}
+
+function saveWeekly() {
+  const text = document.getElementById('weeklyReflection').value.trim();
+  if (!text) return;
+  const entry = { id: Date.now(), date: getToday(), notebook: 'Weekly Reflection', prompt: 'Weekly check-in', text, ts: Date.now() };
+  journalEntries.unshift(entry);
+  localStorage.setItem('sw_entries', JSON.stringify(journalEntries));
+  document.getElementById('weeklyReflection').value = '';
+  if (driveReady) saveToDrive(entry);
+  else showSaveStatus('weeklySaveStatus', 'Saved locally');
+}
+
+function showSaveStatus(id, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  setTimeout(() => { el.textContent = ''; }, 3000);
+}
+
+function renderPastEntries() {
+  const container = document.getElementById('pastEntries');
+  const filtered = journalEntries.filter(e => e.notebook === activeNotebook);
+  if (!filtered.length) { container.innerHTML = ''; return; }
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  container.innerHTML = '<div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;">Past entries</div>' +
+    filtered.slice(0,6).map(e => {
+      const d = new Date(e.date);
+      const dateStr = isNaN(d) ? e.date : `${months[d.getMonth()]} ${d.getDate()}`;
+      return `<div class="past-entry"><div class="past-entry-header"><div class="past-entry-date">${dateStr}</div><span class="past-entry-notebook">${e.notebook}</span></div><div class="past-entry-prompt">${e.prompt}</div><div class="past-entry-text">${e.text}</div></div>`;
+    }).join('');
+}
+
+function updateStats() {
+  const activeDays = new Set(journalEntries.map(e => e.date)).size;
+  document.getElementById('statDays').textContent = Object.keys(checkStates).length;
+  document.getElementById('statJournals').textContent = journalEntries.length;
+  let streak = 0;
+  const today = new Date();
+  for (let i = 0; i < 60; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().split('T')[0];
+    if (checkStates[key] && Object.keys(checkStates[key]).length > 0) streak++;
+    else if (i > 0) break;
+  }
+  document.getElementById('statStreak').textContent = streak;
+}
+
+// ─── NAV ───────────────────────────────────────────────────
+function showSection(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (id === 'journal') renderPastEntries();
+}
+
+// ─── GOOGLE DRIVE ──────────────────────────────────────────
+function checkDriveStatus() {
+  if (!accessToken) { setDriveUI('disconnected'); return; }
+  setDriveUI('connected');
+  driveReady = true;
+}
+
+function setDriveUI(state) {
+  const dot = document.getElementById('driveDot');
+  const text = document.getElementById('driveStatusText');
+  const btn = document.getElementById('driveActionBtn');
+  dot.className = 'drive-dot';
+  if (state === 'connected') {
+    dot.classList.add('connected');
+    text.textContent = 'Connected to Google Drive — entries auto-save';
+    btn.textContent = 'View in Drive';
+    btn.className = 'drive-btn';
+    btn.onclick = openDriveDoc;
+  } else if (state === 'syncing') {
+    dot.classList.add('syncing');
+    text.textContent = 'Saving to Google Drive...';
+    btn.textContent = 'Syncing';
+    btn.className = 'drive-btn';
+  } else if (state === 'error') {
+    dot.classList.add('error');
+    text.textContent = 'Drive sync error — entries saved locally';
+    btn.textContent = 'Reconnect';
+    btn.className = 'drive-btn connect';
+    btn.onclick = handleDriveAction;
+  } else {
+    text.textContent = 'Connect Google Drive to save entries across all devices';
+    btn.textContent = 'Connect Google Drive';
+    btn.className = 'drive-btn connect';
+    btn.onclick = handleDriveAction;
+  }
+}
+
+function handleDriveAction() {
+  if (!accessToken) document.getElementById('driveModal').style.display = 'flex';
+  else openDriveDoc();
+}
+
+function closeModal() { document.getElementById('driveModal').style.display = 'none'; }
+
+function startOAuth() {
+  closeModal();
+  if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
+    showSetupInstructions();
+    return;
+  }
+  const params = new URLSearchParams({
+    client_id: GOOGLE_CLIENT_ID,
+    redirect_uri: window.location.href.split('?')[0],
+    response_type: 'token',
+    scope: SCOPES,
+    prompt: 'consent'
+  });
+  window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+}
+
+function handleOAuthReturn() {
+  const hash = window.location.hash;
+  if (!hash.includes('access_token')) return;
+  const params = new URLSearchParams(hash.replace('#',''));
+  const token = params.get('access_token');
+  if (token) {
+    accessToken = token;
+    localStorage.setItem('sw_access_token', token);
+    window.location.hash = '';
+    driveReady = true;
+    setDriveUI('connected');
+    initDriveDoc();
+  }
+}
+
+async function initDriveDoc() {
+  if (docFileId) return;
+  setDriveUI('syncing');
+  try {
+    const search = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(DOC_NAME)}'&mimeType='application/vnd.google-apps.document'&trashed=false`, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    const data = await search.json();
+    if (data.files && data.files.length > 0) {
+      docFileId = data.files[0].id;
+    } else {
+      const create = await fetch('https://www.googleapis.com/drive/v3/files', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: DOC_NAME, mimeType: 'application/vnd.google-apps.document' })
+      });
+      const file = await create.json();
+      docFileId = file.id;
+    }
+    localStorage.setItem('sw_doc_id', docFileId);
+    setDriveUI('connected');
+    await syncAllEntriesToDrive();
+  } catch(e) {
+    console.error(e);
+    setDriveUI('error');
+  }
+}
+
+let syncTimeout = null;
+function scheduleDriveSync() {
+  clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(syncChecksToDrive, 2000);
+}
+
+async function saveToDrive(entry) {
+  if (!docFileId || !accessToken) { showSaveStatus('saveStatus','Saved locally (connect Drive to sync)'); return; }
+  setDriveUI('syncing');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const d = new Date(entry.date);
+  const dateStr = isNaN(d) ? entry.date : `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  const content = `\n────────────────────\n📓 ${entry.notebook}  ·  ${dateStr}\n\n"${entry.prompt}"\n\n${entry.text}\n`;
+  try {
+    const resp = await fetch(`https://docs.googleapis.com/v1/documents/${docFileId}:batchUpdate`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requests: [{ insertText: { location: { index: 1 }, text: content } }] })
+    });
+    if (resp.ok) { setDriveUI('connected'); showSaveStatus('saveStatus', 'Saved to Drive ✓'); }
+    else { setDriveUI('error'); showSaveStatus('saveStatus', 'Saved locally (Drive error)'); }
+  } catch(e) {
+    setDriveUI('error');
+    showSaveStatus('saveStatus', 'Saved locally (Drive unavailable)');
+  }
+}
+
+async function syncAllEntriesToDrive() {
+  if (!journalEntries.length || !docFileId || !accessToken) return;
+}
+
+async function syncChecksToDrive() {
+  // Checks are stored in localStorage; Drive syncs journal text entries only
+}
+
+function openDriveDoc() {
+  if (docFileId) window.open(`https://docs.google.com/document/d/${docFileId}/edit`, '_blank');
+}
+
+function showSetupInstructions() {
+  alert(`To connect Google Drive:\n\n1. Go to console.cloud.google.com\n2. Create a project\n3. Enable "Google Drive API" and "Google Docs API"\n4. Create OAuth 2.0 credentials (Web application type)\n5. Add this page's URL to "Authorized JavaScript origins"\n6. Copy the Client ID into the GOOGLE_CLIENT_ID variable at the top of this file\n\nThis is a one-time setup — takes about 5 minutes.`);
+}
+
+// ─── START ─────────────────────────────────────────────────
+handleOAuthReturn();
+init();
+</script>
+</body>
+</html>
